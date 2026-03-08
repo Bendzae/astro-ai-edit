@@ -22,7 +22,10 @@ export const onRequest = defineMiddleware(async ({ request, url }, next) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    return Response.redirect(new URL('/admin/login', url.origin), 302);
+    return new Response(null, {
+      status: 302,
+      headers: { Location: '/admin/login' },
+    });
   }
 
   return next();
