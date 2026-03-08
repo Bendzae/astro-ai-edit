@@ -1,4 +1,4 @@
-# astro-ai-edit
+# ⭐ Astro-ai-edit
 
 An Astro integration that adds an AI-powered admin UI to your site. Non-technical users can describe changes in plain language, which creates GitHub issues that trigger [Claude Code Action](https://github.com/anthropics/claude-code-action) to implement the changes, open PRs, and deploy previews — all from a simple chat interface.
 
