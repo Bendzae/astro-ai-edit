@@ -162,8 +162,6 @@ jobs:
 
 The **"Create PR" step is important** — when Claude works on an issue, it creates a branch but not a PR. This step automatically opens a PR linking back to the issue, which is how the admin UI tracks progress and shows preview URLs.
 
-Add `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` as a repository secret (Settings → Secrets and variables → Actions).
-
 See the [Claude Code Action docs](https://github.com/anthropics/claude-code-action) for full configuration options.
 
 ## Features
