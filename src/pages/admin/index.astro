@@ -1,0 +1,1135 @@
+---
+export const prerender = false;
+---
+
+<!doctype html>
+<html lang="en" data-theme="light" style="color-scheme: light;">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>AI Edit</title>
+  <link rel="stylesheet" href="https://unpkg.com/@knadh/oat/oat.min.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" />
+  <script is:inline src="https://unpkg.com/@knadh/oat/oat.min.js" defer></script>
+  <style is:global>
+    :root {
+      --sidebar-width: 280px;
+      --font-sans: 'Geist', system-ui, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--background);
+    }
+
+    /* App layout */
+    .app-layout {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    .app-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .app-sidebar {
+      width: var(--sidebar-width);
+      flex-shrink: 0;
+      border-right: 1px solid var(--border);
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .app-sidebar .sidebar-top {
+      padding: 0.75rem;
+    }
+
+    #thread-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 0.5rem 1rem;
+    }
+
+    .thread-item {
+      width: 100%;
+      text-align: left;
+      padding: 0.625rem 0.75rem;
+      border-radius: var(--radius);
+      border: none;
+      background: none;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+
+    .thread-item:hover {
+      background: var(--muted);
+    }
+
+    .thread-item.active {
+      background: var(--accent);
+    }
+
+    .thread-item.faded {
+      opacity: 0.5;
+    }
+
+    .thread-item .thread-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--foreground);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .thread-item .thread-meta {
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+      margin-top: 0.125rem;
+    }
+
+    /* Status dots */
+    .status-dot {
+      margin-top: 0.375rem;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-pending { background: var(--muted-foreground); }
+    .dot-working { background: #f59e0b; animation: pulse 2s infinite; }
+    .dot-done { background: #22c55e; }
+    .dot-merged { background: #a855f7; }
+    .dot-archived { background: var(--border); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Main panel */
+    .app-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #thread-detail {
+      flex: 1;
+      overflow-y: auto;
+      padding: 2rem 1.5rem;
+    }
+
+    #empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted-foreground);
+    }
+
+    #empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 0.75rem;
+    }
+
+    #thread-content {
+      max-width: 48rem;
+      margin: 0 auto;
+    }
+
+    /* Thread actions */
+    #thread-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Chat bubbles */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .bubble-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      background: var(--faint);
+      color: var(--foreground);
+      border: 1px solid var(--border);
+      padding: 0.625rem 1rem;
+      border-radius: 1rem 1rem 0.25rem 1rem;
+      max-width: 28rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .bubble img {
+      max-width: 200px;
+      max-height: 150px;
+      border-radius: var(--radius);
+      object-fit: cover;
+      cursor: pointer;
+      margin-top: 0.5rem;
+    }
+
+    .result-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+    }
+
+    .result-links {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .result-links .check-icon {
+      width: 16px;
+      height: 16px;
+      color: #22c55e;
+      flex-shrink: 0;
+    }
+
+    .result-links .done-label {
+      color: #16a34a;
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+
+    .preview-link {
+      background: var(--success) !important;
+      color: var(--success-foreground) !important;
+      border-color: var(--success) !important;
+      text-decoration: none;
+    }
+
+    .preview-link:hover {
+      opacity: 0.9;
+    }
+
+    .working-bubble {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--muted-foreground);
+      padding: 0.5rem 0;
+    }
+
+    .working-bubble a {
+      font-size: 0.75rem;
+      margin-left: 0.25rem;
+    }
+
+    /* Merged banner */
+    .merged-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .merged-banner svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    /* Input area */
+    #input-area {
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      padding: 1rem 1.5rem;
+    }
+
+    #input-area form {
+      max-width: 48rem;
+      margin: 0 auto;
+    }
+
+    #image-previews {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .image-preview {
+      position: relative;
+    }
+
+    .image-preview img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .image-preview .remove-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 20px;
+      height: 20px;
+      background: var(--foreground);
+      color: var(--background);
+      border: none;
+      border-radius: 50%;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .image-preview:hover .remove-btn {
+      opacity: 1;
+    }
+
+    .image-preview .image-name {
+      font-size: 10px;
+      color: var(--muted-foreground);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 64px;
+      margin-top: 0.25rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .input-group {
+      flex: 1;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    #prompt-input {
+      flex: 1;
+      resize: none;
+      overflow: hidden;
+      field-sizing: content;
+      max-height: 200px;
+    }
+
+    #attach-btn {
+      align-self: flex-end;
+    }
+
+    #attach-btn svg, #submit-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    #submit-btn {
+      align-self: flex-end;
+    }
+
+    /* Markdown styling */
+    .claude-markdown h1, .claude-markdown h2, .claude-markdown h3 {
+      font-weight: 600;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+    .claude-markdown h3 { font-size: 0.95rem; }
+    .claude-markdown p { margin-bottom: 0.5rem; }
+    .claude-markdown ul, .claude-markdown ol {
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .claude-markdown ul { list-style-type: disc; }
+    .claude-markdown ol { list-style-type: decimal; }
+    .claude-markdown li { margin-bottom: 0.15rem; }
+    .claude-markdown code {
+      background: var(--muted);
+      padding: 0.1rem 0.35rem;
+      border-radius: var(--radius);
+      font-size: 0.85em;
+    }
+    .claude-markdown pre {
+      background: var(--muted);
+      padding: 0.75rem;
+      border-radius: var(--radius);
+      overflow-x: auto;
+      margin-bottom: 0.5rem;
+    }
+    .claude-markdown pre code { background: none; padding: 0; }
+    .claude-markdown a { color: var(--primary); text-decoration: underline; }
+    .claude-markdown strong { font-weight: 600; }
+    .claude-markdown input[type="checkbox"] { margin-right: 0.35rem; }
+
+    /* Sidebar loading */
+    #sidebar-loading {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      color: var(--muted-foreground);
+    }
+
+    /* Hide utility */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="hstack gap-2">
+        <svg style="width:18px;height:18px;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+        </svg>
+        <strong>AI Edit</strong>
+      </div>
+      <div class="hstack gap-2">
+        <a href="/" class="text-light" style="font-size: 0.875rem;">View Site</a>
+        <button id="logout-btn" class="ghost small" data-variant="danger">Logout</button>
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="app-body">
+      <!-- Sidebar -->
+      <aside class="app-sidebar">
+        <div class="sidebar-top">
+          <button id="new-thread-btn" class="w-100">
+            <svg style="width:16px;height:16px;flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            New change
+          </button>
+        </div>
+        <div id="thread-list">
+          <div id="sidebar-loading">
+            <span aria-busy="true" data-spinner="small"></span>
+            Loading...
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main panel -->
+      <main class="app-main">
+        <!-- Thread detail -->
+        <div id="thread-detail">
+          <div id="empty-state">
+            <svg fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+            </svg>
+            <p>Select a thread or start a new change</p>
+          </div>
+          <div id="thread-content" class="hidden">
+            <div id="thread-actions" class="hidden">
+              <button id="merge-btn" class="hidden small">
+                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                </svg>
+                Merge to production
+              </button>
+              <button id="archive-btn" class="outline small" data-variant="danger">
+                <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25-2.25M12 13.875V7.5M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                </svg>
+                Archive
+              </button>
+            </div>
+            <div id="history" class="history-list"></div>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <div id="input-area" class="hidden">
+          <form id="prompt-form">
+            <div id="image-previews" class="hidden"></div>
+            <div class="input-row">
+              <div class="input-group">
+                <button type="button" id="attach-btn" class="outline small" title="Attach images">
+                  <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                  </svg>
+                </button>
+                <input type="file" id="file-input" accept="image/*" multiple class="hidden" />
+                <textarea
+                  id="prompt-input"
+                  rows="1"
+                  placeholder="Describe the changes you'd like to make..."
+                ></textarea>
+              </div>
+              <button type="submit" id="submit-btn">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                </svg>
+                Send
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    import { marked } from 'marked';
+
+    marked.setOptions({ gfm: true, breaks: true });
+
+    function md(s: string): string { return marked.parse(s) as string; }
+
+    const form = document.getElementById('prompt-form') as HTMLFormElement;
+    const input = document.getElementById('prompt-input') as HTMLTextAreaElement;
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+    const historyEl = document.getElementById('history') as HTMLDivElement;
+    const threadList = document.getElementById('thread-list') as HTMLDivElement;
+    const threadDetail = document.getElementById('thread-detail') as HTMLDivElement;
+    const threadContent = document.getElementById('thread-content') as HTMLDivElement;
+    const emptyState = document.getElementById('empty-state') as HTMLDivElement;
+    const inputArea = document.getElementById('input-area') as HTMLDivElement;
+    const newThreadBtn = document.getElementById('new-thread-btn') as HTMLButtonElement;
+    const sidebarLoading = document.getElementById('sidebar-loading') as HTMLDivElement;
+    const threadActions = document.getElementById('thread-actions') as HTMLDivElement;
+    const archiveBtn = document.getElementById('archive-btn') as HTMLButtonElement;
+    const mergeBtn = document.getElementById('merge-btn') as HTMLButtonElement;
+    const attachBtn = document.getElementById('attach-btn') as HTMLButtonElement;
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
+    const imagePreviews = document.getElementById('image-previews') as HTMLDivElement;
+
+    const spinnerHtml = `<span aria-busy="true" data-spinner="small" style="width:16px;height:16px;"></span>`;
+
+    function escapeHtml(s: string) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function formatDate(iso: string) {
+      return new Date(iso).toLocaleDateString(undefined, {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+      });
+    }
+
+    interface FollowUp {
+      prompt: string;
+      claude_summary: string | null;
+      state: 'pending' | 'working' | 'done';
+      created_at: string;
+      images?: string[];
+    }
+
+    interface CardData {
+      issue_number: number;
+      issue_url: string;
+      prompt: string;
+      state: 'pending' | 'working' | 'done';
+      pr_url: string | null;
+      pr_number: number | null;
+      preview_url: string | null;
+      claude_summary: string | null;
+      followups?: FollowUp[];
+      created_at?: string;
+      archived?: boolean;
+      merged?: boolean;
+      images?: string[];
+    }
+
+    let allThreads: CardData[] = [];
+    let activeThread: CardData | null = null;
+
+    // --- Sidebar ---
+
+    function statusDot(state: string): string {
+      const cls = state === 'merged' ? 'dot-merged'
+        : state === 'archived' ? 'dot-archived'
+        : state === 'done' ? 'dot-done'
+        : state === 'working' ? 'dot-working'
+        : 'dot-pending';
+      return `<div class="dot ${cls}"></div>`;
+    }
+
+    function getThreadState(t: CardData): string {
+      if (t.merged) return 'merged';
+      return t.archived ? 'archived' : (t.followups?.length ? t.followups[t.followups.length - 1].state : t.state);
+    }
+
+    function renderSidebar() {
+      const items = allThreads.map(t => {
+        const active = activeThread?.issue_number === t.issue_number;
+        const lastState = getThreadState(t);
+        return `
+          <button
+            data-issue="${t.issue_number}"
+            class="thread-item ${active ? 'active' : ''} ${t.archived && !t.merged ? 'faded' : ''}"
+          >
+            <div class="status-dot">${statusDot(lastState)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="thread-title">${escapeHtml(t.prompt.slice(0, 60))}</div>
+              <div class="thread-meta">${t.created_at ? formatDate(t.created_at) : ''} · #${t.issue_number}${t.merged ? ' · merged' : t.archived ? ' · archived' : ''}</div>
+            </div>
+          </button>`;
+      }).join('');
+
+      sidebarLoading.classList.add('hidden');
+      threadList.querySelectorAll('.thread-item').forEach(el => el.remove());
+      threadList.insertAdjacentHTML('beforeend', items);
+
+      threadList.querySelectorAll('.thread-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const issueNum = Number((btn as HTMLElement).dataset.issue);
+          const thread = allThreads.find(t => t.issue_number === issueNum);
+          if (thread) selectThread(thread);
+        });
+      });
+    }
+
+    function updateSidebarState() {
+      threadList.querySelectorAll('.thread-item').forEach(btn => {
+        const el = btn as HTMLElement;
+        const issueNum = Number(el.dataset.issue);
+        const thread = allThreads.find(t => t.issue_number === issueNum);
+        if (!thread) return;
+
+        const active = activeThread?.issue_number === issueNum;
+        el.classList.toggle('active', active);
+        el.classList.toggle('faded', !!thread.archived && !thread.merged);
+
+        const dotEl = el.querySelector('.status-dot');
+        if (dotEl) dotEl.innerHTML = statusDot(getThreadState(thread));
+      });
+    }
+
+    // --- Thread detail ---
+
+    function renderResultBlock(summary: string | null, previewUrl: string | null, links: { pr_url?: string | null; pr_number?: number | null; issue_url?: string; issue_number?: number }): string {
+      return `
+        <div class="result-block">
+          ${summary ? `<div class="claude-markdown" style="font-size:0.875rem;line-height:1.6;">${md(summary)}</div>` : ''}
+          <div class="result-links">
+            <svg class="check-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="done-label">Done</span>
+            ${previewUrl ? `<a href="${previewUrl}" target="_blank" class="button small preview-link">
+              <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+              Preview
+            </a>` : ''}
+            ${links.pr_url ? `<a href="${links.pr_url}" target="_blank" style="font-size:0.75rem;">PR #${links.pr_number}</a>` : ''}
+            ${links.issue_url ? `<a href="${links.issue_url}" target="_blank" style="font-size:0.75rem;">Issue #${links.issue_number}</a>` : ''}
+          </div>
+        </div>`;
+    }
+
+    function renderPromptBubble(text: string, imageUrls?: string[]): string {
+      const images = imageUrls?.length
+        ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:0.5rem;">${imageUrls.map(url => `<img src="${url}" alt="" onclick="window.open('${url}','_blank')" />`).join('')}</div>`
+        : '';
+      return `<div class="bubble-row"><div class="bubble">${escapeHtml(text)}${images}</div></div>`;
+    }
+
+    function renderWorkingBubble(linkUrl: string, linkLabel: string): string {
+      return `<div class="working-bubble">
+        ${spinnerHtml} <span>Claude is working...</span>
+        <a href="${linkUrl}" target="_blank">${linkLabel}</a>
+      </div>`;
+    }
+
+    function selectThread(data: CardData, pushState = true) {
+      activeThread = data;
+      if (pushState) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('thread', String(data.issue_number));
+        history.replaceState(null, '', url);
+      }
+      updateSidebarState();
+
+      emptyState.classList.add('hidden');
+      threadContent.classList.remove('hidden');
+      historyEl.innerHTML = '';
+
+      if (data.merged || data.archived) {
+        threadActions.classList.add('hidden');
+        inputArea.classList.add('hidden');
+      } else {
+        threadActions.classList.remove('hidden');
+        inputArea.classList.remove('hidden');
+        const allFollowupsDone = !data.followups?.length || data.followups.every(f => f.state === 'done');
+        if (data.state === 'done' && data.pr_number && data.preview_url && allFollowupsDone) {
+          mergeBtn.classList.remove('hidden');
+        } else {
+          mergeBtn.classList.add('hidden');
+        }
+      }
+
+      if (data.merged) {
+        historyEl.insertAdjacentHTML('beforeend', `
+          <div role="alert" data-variant="success" class="merged-banner">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+            </svg>
+            <strong>Merged to production</strong>
+          </div>`);
+      }
+
+      historyEl.insertAdjacentHTML('beforeend', renderPromptBubble(data.prompt, data.images));
+
+      if (data.state === 'done') {
+        historyEl.insertAdjacentHTML('beforeend', renderResultBlock(data.claude_summary, data.preview_url, data));
+
+        if (data.followups?.length) {
+          for (const followup of data.followups) {
+            historyEl.insertAdjacentHTML('beforeend', renderPromptBubble(followup.prompt, followup.images));
+            if (followup.state === 'done' && followup.claude_summary) {
+              historyEl.insertAdjacentHTML('beforeend', renderResultBlock(followup.claude_summary, data.preview_url, { pr_url: data.pr_url, pr_number: data.pr_number }));
+            } else {
+              historyEl.insertAdjacentHTML('beforeend', renderWorkingBubble(data.pr_url!, `PR #${data.pr_number}`));
+              pollFollowup(data, followup.created_at);
+              return;
+            }
+          }
+        }
+
+        updateInputMode(data);
+      } else if (data.state === 'working' || data.state === 'pending') {
+        historyEl.insertAdjacentHTML('beforeend', renderWorkingBubble(data.issue_url, `Issue #${data.issue_number}`));
+        pollInitial(data);
+      }
+    }
+
+    function updateInputMode(data: CardData) {
+      if (data.pr_number) {
+        input.placeholder = 'Follow up on this change...';
+      } else {
+        input.placeholder = 'Describe the changes you\'d like to make...';
+      }
+    }
+
+    // --- Polling ---
+
+    async function pollInitial(data: CardData) {
+      const maxAttempts = 120;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        if (activeThread?.issue_number !== data.issue_number) return;
+
+        try {
+          const res = await fetch(`/api/status?issue=${data.issue_number}`);
+          const result = await res.json();
+
+          if (result.state === 'done') {
+            data.state = 'done';
+            data.pr_url = result.pr_url;
+            data.pr_number = result.pr_number;
+            data.preview_url = result.preview_url;
+            data.claude_summary = result.claude_summary;
+            updateSidebarState();
+
+            if (activeThread?.issue_number === data.issue_number) {
+              selectThread(data);
+            }
+            return;
+          }
+        } catch { /* keep polling */ }
+      }
+
+      if (activeThread?.issue_number === data.issue_number) {
+        const wb = historyEl.querySelector('.working-bubble');
+        if (wb) wb.innerHTML = `<span style="color:var(--danger);font-size:0.875rem;">Timed out.</span> <a href="${data.issue_url}" target="_blank" style="font-size:0.75rem;">Check issue</a>`;
+      }
+    }
+
+    async function pollFollowup(data: CardData, after: string) {
+      const maxAttempts = 120;
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        if (activeThread?.issue_number !== data.issue_number) return;
+
+        try {
+          const res = await fetch(`/api/status?pr=${data.pr_number}&after=${encodeURIComponent(after)}`);
+          const result = await res.json();
+
+          if (result.state === 'done') {
+            const followup = data.followups?.find(f => f.created_at === after);
+            if (followup) {
+              followup.state = 'done';
+              followup.claude_summary = result.claude_summary;
+            }
+            if (result.preview_url) data.preview_url = result.preview_url;
+            updateSidebarState();
+
+            if (activeThread?.issue_number === data.issue_number) {
+              selectThread(data);
+            }
+            return;
+          }
+        } catch { /* keep polling */ }
+      }
+
+      if (activeThread?.issue_number === data.issue_number) {
+        const wb = historyEl.querySelector('.working-bubble');
+        if (wb) wb.innerHTML = `<span style="color:var(--danger);font-size:0.875rem;">Timed out.</span> <a href="${data.pr_url}" target="_blank" style="font-size:0.75rem;">Check PR</a>`;
+      }
+    }
+
+    // --- Load history ---
+
+    let initialLoadDone = false;
+
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/issues');
+        if (!res.ok) throw new Error();
+        allThreads = await res.json() as CardData[];
+        renderSidebar();
+
+        if (!initialLoadDone) {
+          initialLoadDone = true;
+          const threadParam = new URL(window.location.href).searchParams.get('thread');
+          if (threadParam) {
+            const thread = allThreads.find(t => t.issue_number === Number(threadParam));
+            if (thread) selectThread(thread, false);
+          }
+        }
+      } catch {
+        sidebarLoading.innerHTML = '<span style="color:var(--danger);font-size:0.75rem;">Failed to load</span>';
+      }
+    }
+
+    loadHistory();
+    setInterval(loadHistory, 30000);
+
+    // --- New thread ---
+
+    newThreadBtn.addEventListener('click', () => {
+      activeThread = null;
+      const url = new URL(window.location.href);
+      url.searchParams.delete('thread');
+      history.replaceState(null, '', url);
+      renderSidebar();
+      emptyState.classList.add('hidden');
+      threadContent.classList.remove('hidden');
+      inputArea.classList.remove('hidden');
+      threadActions.classList.add('hidden');
+      historyEl.innerHTML = '';
+      input.placeholder = 'Describe the changes you\'d like to make...';
+      input.focus();
+    });
+
+    // --- Images ---
+
+    interface PendingImage {
+      file: File;
+      preview: string;
+    }
+
+    let pendingImages: PendingImage[] = [];
+
+    attachBtn.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      if (!fileInput.files) return;
+      for (const file of Array.from(fileInput.files)) {
+        const preview = URL.createObjectURL(file);
+        pendingImages.push({ file, preview });
+      }
+      fileInput.value = '';
+      renderImagePreviews();
+    });
+
+    function renderImagePreviews() {
+      if (pendingImages.length === 0) {
+        imagePreviews.classList.add('hidden');
+        imagePreviews.innerHTML = '';
+        return;
+      }
+      imagePreviews.classList.remove('hidden');
+      imagePreviews.innerHTML = pendingImages.map((img, i) => `
+        <div class="image-preview">
+          <img src="${img.preview}" alt="${escapeHtml(img.file.name)}" />
+          <button type="button" data-remove="${i}" class="remove-btn">&times;</button>
+          <div class="image-name">${escapeHtml(img.file.name)}</div>
+        </div>
+      `).join('');
+
+      imagePreviews.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number((btn as HTMLElement).dataset.remove);
+          URL.revokeObjectURL(pendingImages[idx].preview);
+          pendingImages.splice(idx, 1);
+          renderImagePreviews();
+        });
+      });
+    }
+
+    function fileToBase64(file: File): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function uploadImages(): Promise<{ url: string; path: string }[]> {
+      const results: { url: string; path: string }[] = [];
+      for (const img of pendingImages) {
+        const data = await fileToBase64(img.file);
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: img.file.name, data }),
+        });
+        if (!res.ok) throw new Error(`Failed to upload ${img.file.name}`);
+        results.push(await res.json());
+      }
+      return results;
+    }
+
+    function clearImages() {
+      pendingImages.forEach(img => URL.revokeObjectURL(img.preview));
+      pendingImages = [];
+      renderImagePreviews();
+    }
+
+    // --- Submit ---
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      input.style.height = 'auto';
+      submitBtn.disabled = true;
+      input.disabled = true;
+
+      let uploadedImages: { url: string; path: string }[] = [];
+      if (pendingImages.length > 0) {
+        const wb = document.createElement('div');
+        wb.className = 'working-bubble';
+        wb.innerHTML = `${spinnerHtml} <span>Uploading ${pendingImages.length} image${pendingImages.length > 1 ? 's' : ''}...</span>`;
+        historyEl.appendChild(wb);
+        threadDetail.scrollTop = threadDetail.scrollHeight;
+
+        try {
+          uploadedImages = await uploadImages();
+          clearImages();
+          wb.remove();
+        } catch (err) {
+          wb.innerHTML = `<span style="color:var(--danger);font-size:0.875rem;">Image upload failed: ${escapeHtml(String(err))}</span>`;
+          submitBtn.disabled = false;
+          input.disabled = false;
+          return;
+        }
+      }
+
+      const imageUrls = uploadedImages.map(i => i.url);
+
+      if (activeThread?.pr_number) {
+        historyEl.insertAdjacentHTML('beforeend', renderPromptBubble(text, imageUrls));
+        historyEl.insertAdjacentHTML('beforeend', renderWorkingBubble(activeThread.pr_url!, `PR #${activeThread.pr_number}`));
+        threadDetail.scrollTop = threadDetail.scrollHeight;
+
+        const sentAt = new Date().toISOString();
+        const followup: FollowUp = { prompt: text, claude_summary: null, state: 'working', created_at: sentAt };
+        if (!activeThread.followups) activeThread.followups = [];
+        activeThread.followups.push(followup);
+
+        try {
+          const res = await fetch('/api/prompt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: text,
+              issue_number: activeThread.issue_number,
+              pr_number: activeThread.pr_number,
+              images: uploadedImages.length ? uploadedImages : undefined,
+            }),
+          });
+          submitBtn.disabled = false;
+          input.disabled = false;
+          if (!res.ok) {
+            const err = await res.json();
+            const wb = historyEl.querySelector('.working-bubble:last-of-type');
+            if (wb) wb.innerHTML = `<span style="color:var(--danger);font-size:0.875rem;">Error: ${escapeHtml(err.error)}</span>`;
+            return;
+          }
+          pollFollowup(activeThread, sentAt);
+        } catch {
+          const wb = historyEl.querySelector('.working-bubble:last-of-type');
+          if (wb) wb.innerHTML = `<span style="color:var(--danger);font-size:0.875rem;">Network error</span>`;
+          submitBtn.disabled = false;
+          input.disabled = false;
+        }
+        return;
+      }
+
+      historyEl.insertAdjacentHTML('beforeend', renderPromptBubble(text, imageUrls));
+      historyEl.insertAdjacentHTML('beforeend', `<div class="working-bubble">${spinnerHtml} <span>Creating issue...</span></div>`);
+      threadDetail.scrollTop = threadDetail.scrollHeight;
+
+      try {
+        const res = await fetch('/api/prompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: text, images: uploadedImages.length ? uploadedImages : undefined }),
+        });
+        const result = await res.json();
+        submitBtn.disabled = false;
+        input.disabled = false;
+
+        if (!res.ok) {
+          const wb = historyEl.querySelector('.working-bubble');
+          if (wb) wb.innerHTML = `<span style="color:var(--danger);font-size:0.875rem;">Error: ${escapeHtml(result.error)}</span>`;
+          return;
+        }
+
+        const data: CardData = {
+          issue_number: result.issue_number,
+          issue_url: result.issue_url,
+          prompt: text,
+          state: 'pending',
+          pr_url: null,
+          pr_number: null,
+          preview_url: null,
+          claude_summary: null,
+          created_at: new Date().toISOString(),
+        };
+
+        allThreads.unshift(data);
+        activeThread = data;
+        renderSidebar();
+
+        const wb = historyEl.querySelector('.working-bubble');
+        if (wb) {
+          wb.innerHTML = `${spinnerHtml} <span>Claude is working...</span>
+            <a href="${result.issue_url}" target="_blank" style="font-size:0.75rem;">Issue #${result.issue_number}</a>`;
+        }
+
+        pollInitial(data);
+      } catch {
+        const wb = historyEl.querySelector('.working-bubble');
+        if (wb) wb.innerHTML = `<span style="color:var(--danger);font-size:0.875rem;">Network error</span>`;
+        submitBtn.disabled = false;
+        input.disabled = false;
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    // Merge
+    mergeBtn.addEventListener('click', async () => {
+      if (!activeThread || !activeThread.pr_number) return;
+      if (!confirm('Merge this change to production?\n\nThis will deploy the changes to the live site and cannot be undone.')) return;
+
+      mergeBtn.disabled = true;
+      mergeBtn.textContent = 'Merging...';
+
+      try {
+        const res = await fetch('/api/merge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pr_number: activeThread.pr_number,
+            issue_number: activeThread.issue_number,
+          }),
+        });
+
+        if (res.ok) {
+          activeThread.merged = true;
+          updateSidebarState();
+          selectThread(activeThread);
+        } else {
+          const err = await res.json();
+          alert(`Merge failed: ${err.error}`);
+        }
+      } catch {
+        alert('Network error. Please try again.');
+      }
+
+      mergeBtn.disabled = false;
+      mergeBtn.textContent = 'Merge to production';
+    });
+
+    // Archive
+    archiveBtn.addEventListener('click', async () => {
+      if (!activeThread) return;
+      if (!confirm('Archive this thread? This will close the issue and any open PRs without merging.')) return;
+
+      archiveBtn.disabled = true;
+      archiveBtn.textContent = 'Archiving...';
+
+      try {
+        const res = await fetch('/api/archive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ issue_number: activeThread.issue_number }),
+        });
+
+        if (res.ok) {
+          activeThread.archived = true;
+          updateSidebarState();
+          selectThread(activeThread);
+        }
+      } catch { /* ignore */ }
+
+      archiveBtn.disabled = false;
+      archiveBtn.textContent = 'Archive';
+    });
+
+    // Logout
+    document.getElementById('logout-btn')!.addEventListener('click', async () => {
+      await fetch('/api/auth', { method: 'DELETE' });
+      window.location.href = '/admin/login';
+    });
+  </script>
+</body>
+</html>

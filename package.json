@@ -1,0 +1,26 @@
+{
+  "name": "astro-ai-edit",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./pages/admin/index.astro": "./src/pages/admin/index.astro",
+    "./pages/admin/login.astro": "./src/pages/admin/login.astro",
+    "./pages/api/auth": "./src/pages/api/auth.ts",
+    "./pages/api/prompt": "./src/pages/api/prompt.ts",
+    "./pages/api/status": "./src/pages/api/status.ts",
+    "./pages/api/issues": "./src/pages/api/issues.ts",
+    "./pages/api/upload": "./src/pages/api/upload.ts",
+    "./pages/api/archive": "./src/pages/api/archive.ts",
+    "./pages/api/merge": "./src/pages/api/merge.ts",
+    "./middleware": "./src/middleware.ts"
+  },
+  "files": ["src"],
+  "keywords": ["astro-integration", "ai", "admin", "claude"],
+  "dependencies": {
+    "marked": "^17.0.0"
+  },
+  "peerDependencies": {
+    "astro": "^5.0.0"
+  }
+}
