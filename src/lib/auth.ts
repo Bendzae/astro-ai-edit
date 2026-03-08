@@ -1,4 +1,4 @@
-const AUTH_SECRET = import.meta.env.AUTH_SECRET || 'dev-secret-change-me';
+const AUTH_SECRET = import.meta.env.AUTH_SECRET;
 const ADMIN_USERNAME = import.meta.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = import.meta.env.ADMIN_PASSWORD;
 const COOKIE_NAME = 'admin_session';
@@ -29,7 +29,7 @@ async function hmacVerify(payload: string, signature: string): Promise<boolean> 
 }
 
 export function isConfigured(): boolean {
-  return !!(ADMIN_USERNAME && ADMIN_PASSWORD);
+  return !!(AUTH_SECRET && ADMIN_USERNAME && ADMIN_PASSWORD);
 }
 
 export function validateCredentials(username: string, password: string): boolean {
