@@ -50,34 +50,41 @@ GITHUB_REPO=owner/repo
 
 ### 4. Add the Claude Code GitHub Action
 
-Create `.github/workflows/claude.yml` in your repository. A template is included in the package at `src/templates/claude.yml`, or use this:
+The easiest way to set this up is with the Claude CLI:
 
-```yaml
-name: Claude Code
-
-on:
-  issues:
-    types: [opened, edited]
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-
-jobs:
-  claude:
-    if: contains(github.event.issue.body || github.event.comment.body || github.event.pull_request.body, '@claude')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-    steps:
-      - uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+```bash
+claude /install-github-app
 ```
 
-You'll need to add `ANTHROPIC_API_KEY` as a repository secret.
+This automatically installs the GitHub app, configures secrets, and sets up the workflow.
+
+Alternatively, create `.github/workflows/claude.yml` manually. A complete template is included in the package at `src/templates/claude.yml` — copy it to your repo and configure the required secret.
+
+The workflow supports two authentication methods:
+
+**Option A: Claude Code OAuth (recommended)**
+
+Add `CLAUDE_CODE_OAUTH_TOKEN` as a repository secret, then use:
+
+```yaml
+- uses: anthropics/claude-code-action@v1
+  with:
+    claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+```
+
+**Option B: Anthropic API key**
+
+Add `ANTHROPIC_API_KEY` as a repository secret, then use:
+
+```yaml
+- uses: anthropics/claude-code-action@v1
+  with:
+    anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+The workflow must trigger on issues and comments (so `@claude` mentions are picked up), and needs `contents: write`, `pull-requests: write`, and `issues: write` permissions. The bundled template also includes a step that automatically creates a PR from Claude's branch when triggered from an issue.
+
+See the [Claude Code Action docs](https://github.com/anthropics/claude-code-action) for full configuration options.
 
 ## Features
 
