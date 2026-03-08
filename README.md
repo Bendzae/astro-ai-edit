@@ -72,13 +72,13 @@ vercel dev                             # Runs dev server with env vars
 
 ### 4. Add the Claude Code GitHub Action
 
-The easiest way is with the Claude CLI:
+First, install the Claude GitHub app on your repo:
 
 ```bash
 claude /install-github-app
 ```
 
-Or manually create `.github/workflows/claude.yml`. A complete template is included in the package at `src/templates/claude.yml`. Here's the full workflow:
+Then add the workflow file. The default workflow installed by the CLI won't include the PR auto-creation step that `astro-ai-edit` needs, so create `.github/workflows/claude.yml` with the following (a template is also included in the package at `src/templates/claude.yml`):
 
 ```yaml
 name: Claude Code
